@@ -25,8 +25,8 @@
 	  dates.push(d.date)
     })   
 	
-	var x = d3.scaleBand()
-  	.domain(data)
+  var x = d3.scaleBand()
+  	.domain(d3.range(data.length))
   	.paddingInner(0.05)
   	.range([0, 15000])
   
@@ -37,18 +37,20 @@
   var xAxis = d3.axisBottom()
   .scale(x);
 
-  var line = d3.line().curve(d3.curveCardinal)
-    .x(function(d, i) { return x(i); })
-    .y(function(d) { return 300 -y(d); })
+ var line = d3.line()
+	 .x(function(d, i) {return x(i); })
+	 .y(function(d) { return 400 - y(d); })
+
 
   svg.selectAll(".line").data([data]).enter()
   	.append("path")
   	.attr("class", "line")
-		.attr("d", function(d) { return line(d); })  
+		.attr("d", function(d) {; return line(d); })  
   	.attr("stroke", "black")
+	.attr("fill", "none")
   
  svg.append('g')
-  .attr('transform', 'translate(15,' + 300 + ')')
+  .attr('transform', 'translate(15,' + 400 + ')')
   .attr('class', 'x axis')
   .call(xAxis);
     
@@ -57,8 +59,8 @@
   // 3. Data binding
   svg.selectAll("rect").data(data).enter()
   	.append("rect")
-    .attr("x", function(d, i) { return x(d); })
-    .attr("y", function(d, i) { return 300 - y(d); })
+    .attr("x", function(d, i) { return x(i); })
+    .attr("y", function(d, i) { return 400 - y(d); })
     .attr("width", function(d, i) { return x.bandwidth(); })
     .attr("height", function(d, i) { return y(d); })
   	.attr("fill", function(d, i) { return color(i); })
@@ -66,8 +68,8 @@
     	d3.select(this).attr("fill", "red")
       svg.append("text")
 			.attr("id", "label_" + i)
-      .attr("x", x(d))
-      .attr("y", 300 - y(d))
+      .attr("x", x(i))
+      .attr("y", 400 - y(d))
       .text(dates[i])
   	})
   	.on("mouseleave", function(d, i) {
