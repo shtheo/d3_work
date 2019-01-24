@@ -13,19 +13,73 @@
   // 1. Create the SVG
   var svg = d3.select("body")
   	.append("svg")
-  	.attr("width", 2000)
+  	.attr("width", 1700)
   	.attr("height", 600)
   
+  data = []
+  dates = []
+  d3.csv('stocks.csv', function(error, raw) {
+    
+    raw.forEach(function(d, i) {
+      data.push(parseFloat(d.price))
+	  dates.push(d.date)
+    })   
+	
+	var x = d3.scaleBand()
+  	.domain(data)
+  	.paddingInner(0.05)
+  	.range([0, 15000])
+  
+  var y = d3.scaleLinear()
+  	.domain([d3.min(data), d3.max(data)])
+  	.range([0, 400])
+  
+  var xAxis = d3.axisBottom()
+  .scale(x);
 
+  var line = d3.line().curve(d3.curveCardinal)
+    .x(function(d, i) { return x(i); })
+    .y(function(d) { return 300 -y(d); })
 
-  d3.csv("stocks.csv",function(data){
-	svg.selectAll("rect").data(data).enter()
-		.append("rect")
-		.attr("x", function(d, i) { return i * 10; })
-		.attr("y", function(d, i) { return 300 - d.price; })
-		.attr("width", function(d, i) { return 10; })
-		.attr("height", function(d, i) { return d.price; })  
+  svg.selectAll(".line").data([data]).enter()
+  	.append("path")
+  	.attr("class", "line")
+		.attr("d", function(d) { return line(d); })  
+  	.attr("stroke", "black")
+  
+ svg.append('g')
+  .attr('transform', 'translate(15,' + 300 + ')')
+  .attr('class', 'x axis')
+  .call(xAxis);
+    
+  var color = d3.scaleOrdinal(d3.schemeCategory20) 
+
+  // 3. Data binding
+  svg.selectAll("rect").data(data).enter()
+  	.append("rect")
+    .attr("x", function(d, i) { return x(d); })
+    .attr("y", function(d, i) { return 300 - y(d); })
+    .attr("width", function(d, i) { return x.bandwidth(); })
+    .attr("height", function(d, i) { return y(d); })
+  	.attr("fill", function(d, i) { return color(i); })
+  	.on("mouseover", function(d, i) {
+    	d3.select(this).attr("fill", "red")
+      svg.append("text")
+			.attr("id", "label_" + i)
+      .attr("x", x(d))
+      .attr("y", 300 - y(d))
+      .text(dates[i])
   	})
+  	.on("mouseleave", function(d, i) {
+    	d3.select(this).attr("fill", "green")	
+      
+      d3.selectAll("#label_" + i).remove()
+      
+  	})
+  });
+  
+  
+  
   
  </script>
  
