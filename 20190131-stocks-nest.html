@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+
+<head>
+  <meta charset="utf-8">
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+
+</head>
+
+<body>
+  <script>
+    // Create the svg
+    var width = 960;
+    var height = 500;
+    var svg = d3.select("body").append("svg")
+      .attr("width", width)
+      .attr("height", height);
+
+    var gBars = svg.append("g")
+      .attr("id", "bars")
+
+    // Generate data
+    var data;
+
+    var timeParser = d3.timeParse("%b %Y");
+
+    d3.csv('stocks.csv', function(e, raw) {
+      data = d3.nest()
+        .key(d => d.symbol)
+        .key(function(d) {
+          date = new Date(d.date)
+          return date.getYear() + 1900;
+        })
+        .rollup(v => d3.mean(v, d => d.price))
+        .entries(raw);
+      main()
+    })
+
+    function main() {
+      var bottom = 50
+      var xmin = 30;
+      var xmax = width - 10;
+      var ymin = 20;
+      var ymax = height - 50;
+      var all_years = data.map(d => d['values'].map(d => Number(d['key'])))
+      var max_year = d3.max(all_years[0])
+      var min_year = d3.min(all_years[0])
+      
+      var all_prices = data.map(d => d['values'].map(d => d['value']))
+      var max_price = d3.max(all_prices, d => d3.max(d))
+      var y = d3.scaleLinear()
+        .domain([0, max_price])
+        .range([ymax, ymin]);
+
+      
+      var x = d3.scaleBand()
+        .domain(d3.range(min_year, max_year + 1))
+        .range([xmin, xmax])
+
+
+      var color = d3.scaleOrdinal(d3.schemeCategory20)
+
+      var xAxis = d3.axisBottom(x)
+      var yAxis = d3.axisLeft(y)
+
+      var bandwidth = 10
+      for (var i = 0; i < data.length; i++) {
+        var stock_data = data[i]
+        stock = stock_data['key']
+        gStock = gBars.append("g")
+          .attr("id", stock_data.key)
+        gStock.selectAll("#" + stock).data(stock_data['values']).enter()
+          .append("rect")
+          .attr("width", bandwidth)
+          .attr("height", (d, i) => ymax - y(d.value))
+          .attr("x", (d, j) => x(Number(d.key)) + bandwidth * i + 20)
+          .attr("y", (d, i) => y(d.value))
+          .attr("fill", color(stock))
+          .attr("stroke", "none");
+      }
+
+      svg.append("g")
+        .attr("transform", "translate(" + 0 + ", " + ymax + ")")
+        .attr("class", "x axis")
+        .call(xAxis);
+
+      svg.append("g")
+        .attr("transform", "translate(" + (xmin) + ", " + 0 + ")")
+        .attr("class", "y axis")
+        .call(yAxis);
+
+      var legend = svg.selectAll(".legend")
+        .data(color.domain())
+        .enter().append("g")
+        .attr("class", "legend")
+        .attr("transform", function(d, i) {
+          return "translate(" + xmin + "," + ((i + 1) * 30) + ")";
+        });
+
+      legend.append("rect")
+        .attr("x", 30)
+        .attr("width", 18)
+        .attr("height", 18)
+        .style("fill", color);
+
+      legend.append("text")
+        .attr("x", 50)
+        .attr("y", 9)
+        .attr("dy", ".35em")
+        .style("text-anchor", "start")
+        .text(d => d)
+        .attr("fill", "#000");
+    }
+  </script>
+</body>
