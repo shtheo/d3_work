@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <style>
+    body { 
+		margin-left:10%; 
+		margin-right:10%; 
+		margin-top:30px; 
+		position:fixed;
+		top:0;
+		right:0;
+		bottom:0;
+		left:0; 
+		font-family : century gothic, arial
+	}
+	svg{
+		margin-left : auto;
+		margin-right : auto;
+	}
+    .region:hover {
+        fill: #666;
+    }
+    .hidden {
+        display: none;
+    }
+    div.tooltip {
+        color: #ffffff;
+        background-color: #000000;
+        padding: .5em;
+        border-radius: 2px;
+        opacity: 0.9;
+        position: absolute;
+		font-family : century gothic, arial
+    }
+	h1 {
+		font-family : century gothic, arial;
+		font size : 34px;
+		font-weight : bold;
+	}
+	input[type="range"] {
+	  width:600px;
+	}
+  </style>
+</head>
+
+<body>
+	<h1> La grippe en France en 2014</h1>
+	<div>
+	  <input id="slider" type="range" value="1" min="1" max="52" step="1" oninput="afficheSemaine(this.value)"/>
+	  <span id="week">Semaine du 05/01/14</span>
+	</div>
+  <script>
+		var width = 700,
+  		  height = 580;
+
+		var svg = d3.select( "body" )
+  		.append( "svg" )
+		  .attr( "width", width )
+		  .attr( "height", height );
+
+    var projection = d3.geoConicConformal().center([2.454071, 46.279229]).scale(2800)
+    			.translate([width/2, height/2])
+
+    var path = d3.geoPath() // d3.geo.path avec d3 version 3
+                 .projection(projection);
+	
+	var tooltip = d3.select('body').append('div')
+            .attr('class', 'hidden tooltip');
+	
+	function afficheSemaine(value){
+		d3.csv("GrippeFrance2014.csv", function(data) {
+			var semaine = d3.keys(data[0])[value];
+			d3.select("#week")
+				.text("Semaine du " + semaine);
+			
+			var color = d3.scaleLinear();
+			color.range(['green', 'red']);
+			
+			var color_max = d3.max(data, function(d) {
+				var liste_valeurs = Object.values(d);
+				return d3.max(liste_valeurs.slice(1, liste_valeurs.length - 2), function(e){
+					return +e;
+					})});
+			var color_min = d3.min(data, function(d) {
+				var liste_valeurs = Object.values(d);
+				return d3.min(liste_valeurs.slice(1, liste_valeurs.length - 2), function(e){
+					return +e;
+					})});
+			color.domain([color_min, color_max]);
+			
+			color.domain([color_min, color_max]);
+
+
+			d3.json("regions.json", function(json) {
+			  //On fusionne les donnees avec le GeoJSON des regions
+			  
+			  for (var i = 0; i < data.length; i++) {
+				var dataValue = parseFloat(data[i][semaine]);
+				svg.selectAll("#" + data[i].region.substring(0,3))
+					.attr("fill", color(dataValue))
+					.attr("data_value", dataValue)
+			  };
+			  
+
+			});
+		});
+	}
+    
+		d3.json("regions.json", function(json) {
+			svg.selectAll("path")
+					.data(json.features)
+				   .enter()
+				   .append("path")
+				   .attr("d", path)
+				   .attr("id", function(d){return d.properties.nom.substring(0,3)})
+				   .attr("class", "region")
+				   .on('mousemove', function(d) {
+						var mouse = d3.mouse(svg.node()).map(function(d) {
+							return parseInt(d);
+						});
+						tooltip.classed('hidden', false)
+							.attr('style', 'left:' + (mouse[0] + 15) +
+									'px; top:' + (mouse[1] - 35) + 'px')
+							.html( function(){
+								var current_region = document.getElementById(d.properties.nom.substring(0,3));
+								var current_data = current_region.getAttribute("data_value");
+								 return d.properties.nom + ' - ' + current_data;
+								});
+					})
+					.on('mouseout', function() {
+						tooltip.classed('hidden', true);
+					});;
+			   
+		});
+		
+		d3.csv("GrippeFrance2014.csv", function(data) {
+			var color = d3.scaleLinear();
+			color.range(['green', 'red']);
+			
+			var color_max = d3.max(data, function(d) {
+				var liste_valeurs = Object.values(d);
+				return d3.max(liste_valeurs.slice(1, liste_valeurs.length - 2), function(e){
+					return +e;
+					})});
+			var color_min = d3.min(data, function(d) {
+				var liste_valeurs = Object.values(d);
+				return d3.min(liste_valeurs.slice(1, liste_valeurs.length - 2), function(e){
+					return +e;
+					})});
+			color.domain([color_min, color_max]);
+
+
+			d3.json("regions.json", function(json) {
+			  //On fusionne les donnees avec le GeoJSON des regions
+			  
+			  for (var i = 0; i < data.length; i++) {
+				var dataValue = parseFloat(data[i]["05/01/14"]);
+				svg.selectAll("#" + data[i].region.substring(0,3))
+					.attr("fill", color(dataValue))
+					.attr("data_value", dataValue)
+			  };
+			  
+
+			});
+		});
+	
+		
+  </script>
+</body>
+	
